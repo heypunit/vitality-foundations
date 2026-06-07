@@ -1,13 +1,9 @@
 document.addEventListener('DOMContentLoaded', () => {
     // ==================== CONFIG ====================
-    // FORMSPREE: Replace YOUR_FORMSPREE_FORM_ID in your HTML form action
-    // Get your form ID from https://formspree.io after signing up with heypunitgautam@gmail.com
-    //
-    // CUSTOM BACKEND (alternative): Change this to your backend URL when deployed
-    // Local: http://localhost:3000 | Production: https://your-backend-domain.com
-    const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? 'http://localhost:3000'
-        : 'https://your-backend-domain.com'; // <-- CHANGE THIS IF USING CUSTOM BACKEND
+    // Backend API base URL
+    // When served by the Express backend, leave empty for same-origin requests.
+    // If deploying frontend separately, set to your backend URL (e.g. https://api.yourdomain.com)
+    const API_BASE = '';
 
     // ==================== NAVBAR ====================
     const navbar = document.querySelector('.navbar');
@@ -117,7 +113,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Contact Form Handler (supports both Formspree and custom backend)
+    // Contact Form Handler (Formspree)
     const contactForm = document.getElementById('contactForm');
     
     if (contactForm) {
@@ -139,10 +135,10 @@ document.addEventListener('DOMContentLoaded', () => {
             
             const submitBtn = contactForm.querySelector('button[type="submit"]');
             const formData = new FormData(contactForm);
-            const data = Object.fromEntries(formData.entries());
             const action = contactForm.getAttribute('action');
 
             // Basic validation
+            const data = Object.fromEntries(formData.entries());
             if (!data.name || !data.email || !data.goals) {
                 showToast('Please fill in all required fields.', 'error');
                 return;
@@ -156,58 +152,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
             setButtonLoading(submitBtn, true);
 
-            // Check if using Formspree
-            const isFormspree = action && action.includes('formspree.io');
-
             try {
-                let response;
+                // Formspree expects FormData, not JSON
+                const response = await fetch(action, {
+                    method: 'POST',
+                    headers: { 'Accept': 'application/json' },
+                    body: formData
+                });
 
-                if (isFormspree) {
-                    // Formspree AJAX submission
-                    response = await fetch(action, {
-                        method: 'POST',
-                        headers: { 'Accept': 'application/json' },
-                        body: formData
-                    });
-                } else if (action && action !== '#') {
-                    // Custom backend API
-                    response = await fetch(action, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(data)
-                    });
+                if (response.ok) {
+                    showToast('Thank you! Your inquiry has been sent. We will contact you within 24 hours.', 'success');
+                    contactForm.reset();
                 } else {
-                    // No backend configured — show message
-                    showToast('Form backend not configured yet. Please set up Formspree or deploy the backend.', 'error');
-                    setButtonLoading(submitBtn, false);
-                    return;
-                }
-
-                if (isFormspree) {
-                    // Formspree response handling
-                    if (response.ok) {
-                        showToast('Thank you! Your inquiry has been sent. We will contact you within 24 hours.', 'success');
-                        contactForm.reset();
-                    } else {
-                        const result = await response.json().catch(() => ({}));
-                        showToast(result.error || 'Something went wrong. Please try again.', 'error');
-                    }
-                } else {
-                    // Custom backend response handling
-                    const result = await response.json();
-                    if (response.ok && result.success) {
-                        showToast(result.message, 'success');
-                        contactForm.reset();
-                    } else {
-                        showToast(result.message || 'Something went wrong. Please try again.', 'error');
-                    }
+                    const result = await response.json().catch(() => ({}));
+                    showToast(result.error || 'Something went wrong. Please try again.', 'error');
                 }
 
             } catch (error) {
                 console.error('Form submission error:', error);
-                // Fallback: save to localStorage if backend is unreachable
-                saveToLocalFallback('contacts', data);
-                showToast('Unable to reach server. Your inquiry has been saved locally and will be sent when connection is restored.', 'error');
+                showToast('Unable to send your inquiry right now. Please try again or contact us via WhatsApp.', 'error');
             } finally {
                 setButtonLoading(submitBtn, false);
             }

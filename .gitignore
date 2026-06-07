@@ -1,0 +1,20 @@
+# Dependencies
+backend/node_modules/
+
+# Environment variables
+backend/.env
+
+# Database files
+backend/data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
+# Logs
+*.log
+npm-debug.log*
