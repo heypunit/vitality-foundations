@@ -1,0 +1,66 @@
+# render.yaml — Render Blueprint for Vitality Foundations
+# This file enables one-click deployment on Render.com
+# See docs/RENDER_DEPLOY.md for full instructions
+
+services:
+  # Backend API Service
+  - type: web
+    name: vitality-foundations-api
+    runtime: node
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: SITE_NAME
+        value: Vitality Foundations
+      - key: SITE_URL
+        value: https://vitality-foundations.onrender.com
+      - key: ALLOWED_ORIGINS
+        value: https://vitality-foundations.onrender.com
+      - key: ADMIN_API_KEY
+        generateValue: true
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: 587
+      # Add these manually in Render dashboard after deployment:
+      # SMTP_USER: your-email@gmail.com
+      # SMTP_PASS: your-gmail-app-password
+      # NOTIFY_EMAIL: your-email@gmail.com
+
+  # Static Frontend Site
+  - type: static
+    name: vitality-foundations
+    plan: free
+    buildCommand: ""  # No build needed for plain HTML/CSS/JS
+    publish: .        # Publish from repo root
+    envVars:
+      - key: NODE_ENV
+        value: production
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+    routes:
+      - type: rewrite
+        source: /about
+        destination: /about.html
+      - type: rewrite
+        source: /services
+        destination: /services.html
+      - type: rewrite
+        source: /contact
+        destination: /contact.html
+      - type: rewrite
+        source: /admin
+        destination: /backend/admin.html
