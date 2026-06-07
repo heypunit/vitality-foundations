@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vitality Foundations Admin</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {font-family: 'Outfit', sans-serif; background: #f5f5f5; padding: 2rem;}
+    .admin-container {max-width: 900px; margin: auto; background:#fff; padding:1.5rem; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+    .token-input {margin-bottom:1rem;}
+    table {width:100%; border-collapse:collapse; margin-top:1rem;}
+    th, td {padding:0.5rem; border:1px solid #ddd; text-align:left;}
+    th {background:#f0f0f0;}
+    .error {color:#d00; margin-top:0.5rem;}
+  </style>
+</head>
+<body>
+  <div class="admin-container">
+    <h1>Admin Dashboard</h1>
+    <div class="token-input">
+      <label for="adminToken">Admin Token:</label>
+      <input type="password" id="adminToken" placeholder="Enter token" />
+      <button id="loadData">Load Data</button>
+      <div id="errorMsg" class="error"></div>
+    </div>
+    <section id="contactsSection" style="display:none;">
+      <h2>Contact Submissions</h2>
+      <table id="contactsTable">
+        <thead><tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Service</th><th>Goals</th><th>Date</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+    <section id="subscribersSection" style="display:none;">
+      <h2>Newsletter Subscribers</h2>
+      <table id="subsTable">
+        <thead><tr><th>ID</th><th>Email</th><th>Date</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </section>
+  </div>
+
+  <script>
+    const loadBtn = document.getElementById('loadData');
+    const tokenInput = document.getElementById('adminToken');
+    const errorDiv = document.getElementById('errorMsg');
+    const contactsSection = document.getElementById('contactsSection');
+    const subsSection = document.getElementById('subscribersSection');
+    const contactsTbody = document.querySelector('#contactsTable tbody');
+    const subsTbody = document.querySelector('#subsTable tbody');
+
+    function renderContacts(data) {
+      contactsTbody.innerHTML = '';
+      data.forEach(c => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${c.id}</td><td>${c.name}</td><td>${c.email}</td><td>${c.phone||''}</td><td>${c.service||''}</td><td>${c.goals}</td><td>${c.created_at}</td>`;
+        contactsTbody.appendChild(tr);
+      });
+    }
+    function renderSubscribers(data) {
+      subsTbody.innerHTML = '';
+      data.forEach(s => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${s.id}</td><td>${s.email}</td><td>${s.created_at}</td>`;
+        subsTbody.appendChild(tr);
+      });
+    }
+    async function fetchData(endpoint) {
+      const res = await fetch(endpoint, {
+        headers: {'x-admin-token': tokenInput.value}
+      });
+      if (!res.ok) throw new Error('Unauthorized or server error');
+      return await res.json();
+    }
+    loadBtn.addEventListener('click', async () => {
+      errorDiv.textContent = '';
+      try {
+        const contacts = await fetchData('/api/admin/contacts');
+        const subs = await fetchData('/api/admin/subscribers');
+        renderContacts(contacts);
+        renderSubscribers(subs);
+        contactsSection.style.display = 'block';
+        subsSection.style.display = 'block';
+      } catch (e) {
+        errorDiv.textContent = e.message;
+        contactsSection.style.display = 'none';
+        subsSection.style.display = 'none';
+      }
+    });
+  </script>
+</body>
+</html>

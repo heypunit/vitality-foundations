@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://vitality-foundations.onrender.com/sitemap.xml
